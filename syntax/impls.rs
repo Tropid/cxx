@@ -342,6 +342,7 @@ impl PartialEq for Signature {
                 let Var {
                     cfg: _,
                     doc: _,
+                    ue_macro: _,
                     attrs: _,
                     visibility: _,
                     name: _,
@@ -351,6 +352,7 @@ impl PartialEq for Signature {
                 let Var {
                     cfg: _,
                     doc: _,
+                    ue_macro: _,
                     attrs: _,
                     visibility: _,
                     name: _,
@@ -383,6 +385,7 @@ impl Hash for Signature {
             let Var {
                 cfg: _,
                 doc: _,
+                ue_macro: _,
                 attrs: _,
                 visibility: _,
                 name: _,

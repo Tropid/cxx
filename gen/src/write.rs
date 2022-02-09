@@ -21,6 +21,10 @@ pub(super) fn gen(apis: &[Api], types: &Types, opt: &Opt, header: bool) -> Vec<u
     pick_includes_and_builtins(out, apis);
     out.include.extend(&opt.include);
 
+    writeln!(out, "#ifdef IN_ENGINE");
+    writeln!(out, "#include \"{}.generated.h\"", "lib.rs");
+    writeln!(out, "#endif // IN_ENGINE");
+
     write_forward_declarations(out, apis);
     write_data_structures(out, apis);
     write_functions(out, apis);
@@ -232,19 +236,34 @@ fn write_struct<'a>(out: &mut OutFile<'a>, strct: &'a Struct, methods: &[&Extern
     let operator_ord = derive::contains(&strct.derives, Trait::PartialOrd);
 
     out.set_namespace(&strct.name.namespace);
-    let guard = format!("CXXBRIDGE1_STRUCT_{}", strct.name.to_symbol());
-    writeln!(out, "#ifndef {}", guard);
-    writeln!(out, "#define {}", guard);
+
+    writeln!(out, "#ifndef USTRUCT");
+    writeln!(out, "#define USTRUCT(...)");
+    writeln!(out, "#endif");
+
+    writeln!(out, "#ifndef UPROPERTY");
+    writeln!(out, "#define UPROPERTY(...)");
+    writeln!(out, "#endif");
+
+    writeln!(out, "#ifndef GENERATED_BODY");
+    writeln!(out, "#define GENERATED_BODY(...)");
+    writeln!(out, "#endif");
+
     for line in strct.doc.to_string().lines() {
         writeln!(out, "//{}", line);
     }
-    writeln!(out, "struct {} final {{", strct.name.cxx);
+    writeln!(out, "USTRUCT(Blueprintable)");
+    writeln!(out, "struct {} {{", strct.name.cxx);
+    writeln!(out, "    GENERATED_BODY()");
 
     for field in &strct.fields {
         for line in field.doc.to_string().lines() {
             writeln!(out, "  //{}", line);
         }
         write!(out, "  ");
+        if let Some(ue_macro) = &field.ue_macro {
+            writeln!(out, "{}", ue_macro);
+        }
         write_type_space(out, &field.ty);
         writeln!(out, "{};", field.name.cxx);
     }
@@ -309,7 +328,7 @@ fn write_struct<'a>(out: &mut OutFile<'a>, strct: &'a Struct, methods: &[&Extern
     writeln!(out, "  using IsRelocatable = ::std::true_type;");
 
     writeln!(out, "}};");
-    writeln!(out, "#endif // {}", guard);
+    // writeln!(out, "#endif // {}", guard);
 }
 
 fn write_struct_decl(out: &mut OutFile, ident: &Pair) {

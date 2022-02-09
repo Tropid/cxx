@@ -28,6 +28,7 @@ mod tokens;
 mod toposort;
 pub mod trivial;
 pub mod types;
+pub mod ueattr;
 mod visit;
 
 use self::attrs::OtherAttrs;
@@ -35,6 +36,7 @@ use self::cfg::CfgExpr;
 use self::namespace::Namespace;
 use self::parse::kw;
 use self::symbol::Symbol;
+use self::ueattr::UeAttr;
 use proc_macro2::{Ident, Span};
 use syn::punctuated::Punctuated;
 use syn::token::{Brace, Bracket, Paren};
@@ -194,6 +196,7 @@ pub struct Signature {
 pub struct Var {
     pub cfg: CfgExpr,
     pub doc: Doc,
+    pub ue_macro: Option<UeAttr>,
     pub attrs: OtherAttrs,
     pub visibility: Token![pub],
     pub name: Pair,

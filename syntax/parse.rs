@@ -62,6 +62,7 @@ fn parse_struct(cx: &mut Errors, mut item: ItemStruct, namespace: &Namespace) ->
     let mut namespace = namespace.clone();
     let mut cxx_name = None;
     let mut rust_name = None;
+    let mut ue_macro = None;
     let attrs = attrs::parse(
         cx,
         mem::take(&mut item.attrs),
@@ -72,6 +73,7 @@ fn parse_struct(cx: &mut Errors, mut item: ItemStruct, namespace: &Namespace) ->
             namespace: Some(&mut namespace),
             cxx_name: Some(&mut cxx_name),
             rust_name: Some(&mut rust_name),
+            ue_macro: Some(&mut ue_macro),
             ..Default::default()
         },
     );
@@ -131,6 +133,7 @@ fn parse_struct(cx: &mut Errors, mut item: ItemStruct, namespace: &Namespace) ->
         let mut doc = Doc::new();
         let mut cxx_name = None;
         let mut rust_name = None;
+        let mut ue_macro = None;
         let attrs = attrs::parse(
             cx,
             field.attrs,
@@ -139,6 +142,7 @@ fn parse_struct(cx: &mut Errors, mut item: ItemStruct, namespace: &Namespace) ->
                 doc: Some(&mut doc),
                 cxx_name: Some(&mut cxx_name),
                 rust_name: Some(&mut rust_name),
+                ue_macro: Some(&mut ue_macro),
                 ..Default::default()
             },
         );
@@ -155,6 +159,7 @@ fn parse_struct(cx: &mut Errors, mut item: ItemStruct, namespace: &Namespace) ->
         fields.push(Var {
             cfg,
             doc,
+            ue_macro,
             attrs,
             visibility,
             name,
@@ -628,6 +633,7 @@ fn parse_extern_fn(
                     args.push_value(Var {
                         cfg,
                         doc,
+                        ue_macro: None,
                         attrs,
                         visibility,
                         name,
@@ -1389,6 +1395,7 @@ fn parse_type_fn(ty: &TypeBareFn) -> Result<Type> {
             Ok(Var {
                 cfg,
                 doc,
+                ue_macro: None,
                 attrs,
                 visibility,
                 name,

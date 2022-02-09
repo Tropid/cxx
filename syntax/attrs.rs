@@ -2,7 +2,7 @@ use crate::syntax::cfg::CfgExpr;
 use crate::syntax::namespace::Namespace;
 use crate::syntax::report::Errors;
 use crate::syntax::Atom::{self, *};
-use crate::syntax::{cfg, Derive, Doc, ForeignName};
+use crate::syntax::{cfg, Derive, Doc, ForeignName, UeAttr};
 use proc_macro2::{Ident, TokenStream};
 use quote::ToTokens;
 use syn::parse::{Nothing, Parse, ParseStream, Parser as _};
@@ -35,6 +35,7 @@ pub struct Parser<'a> {
     pub namespace: Option<&'a mut Namespace>,
     pub cxx_name: Option<&'a mut Option<ForeignName>>,
     pub rust_name: Option<&'a mut Option<Ident>>,
+    pub ue_macro: Option<&'a mut Option<UeAttr>>,
     pub variants_from_header: Option<&'a mut Option<Attribute>>,
     pub ignore_unrecognized: bool,
 
@@ -120,6 +121,19 @@ pub fn parse(cx: &mut Errors, attrs: Vec<Attribute>, mut parser: Parser) -> Othe
                 Ok(attr) => {
                     if let Some(rust_name) = &mut parser.rust_name {
                         **rust_name = Some(attr);
+                        continue;
+                    }
+                }
+                Err(err) => {
+                    cx.push(err);
+                    break;
+                }
+            }
+        } else if attr.path.is_ident("ue_macro") {
+            match parse_ueattr_attribute.parse2(attr.tokens.clone()) {
+                Ok(attr) => {
+                    if let Some(ue_macro) = &mut parser.ue_macro {
+                        **ue_macro = Some(attr);
                         continue;
                     }
                 }
@@ -256,6 +270,12 @@ fn parse_cxx_name_attribute(input: ParseStream) -> Result<ForeignName> {
         let ident: Ident = input.parse()?;
         ForeignName::parse(&ident.to_string(), ident.span())
     }
+}
+
+fn parse_ueattr_attribute(input: ParseStream) -> Result<UeAttr> {
+    input.parse::<Token![=]>()?;
+    let lit: LitStr = input.parse()?;
+    UeAttr::parse(&lit.value(), lit.span())
 }
 
 fn parse_rust_name_attribute(input: ParseStream) -> Result<Ident> {

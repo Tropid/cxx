@@ -41,6 +41,7 @@ impl ToTokens for Var {
         let Var {
             cfg: _,
             doc: _,
+            ue_macro: _,
             attrs: _,
             visibility: _,
             name,
