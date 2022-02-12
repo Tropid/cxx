@@ -21,9 +21,29 @@ pub(super) fn gen(apis: &[Api], types: &Types, opt: &Opt, header: bool) -> Vec<u
     pick_includes_and_builtins(out, apis);
     out.include.extend(&opt.include);
 
-    writeln!(out, "#ifdef IN_ENGINE");
-    writeln!(out, "#include \"{}.generated.h\"", "lib.rs");
-    writeln!(out, "#endif // IN_ENGINE");
+    writeln!(out, "#ifndef CXX_BUILD");
+    writeln!(out, "#include \"{}.generated.h\"", "librs");
+    writeln!(out, "#endif // CXX_BUILD");
+
+    writeln!(out, "#ifndef USTRUCT");
+    writeln!(out, "#define USTRUCT(...)");
+    writeln!(out, "#endif");
+
+    writeln!(out, "#ifndef UENUM");
+    writeln!(out, "#define UENUM(...)");
+    writeln!(out, "#endif");
+
+    writeln!(out, "#ifndef UPROPERTY");
+    writeln!(out, "#define UPROPERTY(...)");
+    writeln!(out, "#endif");
+
+    writeln!(out, "#ifndef GENERATED_BODY");
+    writeln!(out, "#define GENERATED_BODY(...)");
+    writeln!(out, "#endif");
+
+    writeln!(out, "#ifndef uint8");
+    writeln!(out, "#define uint8 ::std::uint8_t");
+    writeln!(out, "#endif");
 
     write_forward_declarations(out, apis);
     write_data_structures(out, apis);
@@ -237,18 +257,6 @@ fn write_struct<'a>(out: &mut OutFile<'a>, strct: &'a Struct, methods: &[&Extern
 
     out.set_namespace(&strct.name.namespace);
 
-    writeln!(out, "#ifndef USTRUCT");
-    writeln!(out, "#define USTRUCT(...)");
-    writeln!(out, "#endif");
-
-    writeln!(out, "#ifndef UPROPERTY");
-    writeln!(out, "#define UPROPERTY(...)");
-    writeln!(out, "#endif");
-
-    writeln!(out, "#ifndef GENERATED_BODY");
-    writeln!(out, "#define GENERATED_BODY(...)");
-    writeln!(out, "#endif");
-
     for line in strct.doc.to_string().lines() {
         writeln!(out, "//{}", line);
     }
@@ -400,20 +408,11 @@ fn write_opaque_type<'a>(out: &mut OutFile<'a>, ety: &'a ExternType, methods: &[
 }
 
 fn write_enum<'a>(out: &mut OutFile<'a>, enm: &'a Enum) {
-    let repr = match &enm.repr {
-        #[cfg(feature = "experimental-enum-variants-from-header")]
-        EnumRepr::Foreign { .. } => return,
-        EnumRepr::Native { atom, .. } => *atom,
-    };
-    out.set_namespace(&enm.name.namespace);
-    let guard = format!("CXXBRIDGE1_ENUM_{}", enm.name.to_symbol());
-    writeln!(out, "#ifndef {}", guard);
-    writeln!(out, "#define {}", guard);
     for line in enm.doc.to_string().lines() {
         writeln!(out, "//{}", line);
     }
-    write!(out, "enum class {} : ", enm.name.cxx);
-    write_atom(out, repr);
+    writeln!(out, "UENUM(BlueprintType)");
+    write!(out, "enum class {} : uint8", enm.name.cxx);
     writeln!(out, " {{");
     for variant in &enm.variants {
         for line in variant.doc.to_string().lines() {
@@ -422,7 +421,6 @@ fn write_enum<'a>(out: &mut OutFile<'a>, enm: &'a Enum) {
         writeln!(out, "  {} = {},", variant.name.cxx, variant.discriminant);
     }
     writeln!(out, "}};");
-    writeln!(out, "#endif // {}", guard);
 }
 
 fn check_enum<'a>(out: &mut OutFile<'a>, enm: &'a Enum) {
